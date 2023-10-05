@@ -1,0 +1,5 @@
+{"properties": [{
+  "name": "apiPrefix",
+  "type": "java.lang.String",
+  "description": "is the prefix for api rest controllers"
+}]}
