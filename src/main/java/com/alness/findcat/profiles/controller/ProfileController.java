@@ -17,8 +17,12 @@ import com.alness.findcat.profiles.dto.request.ProfileRequest;
 import com.alness.findcat.profiles.dto.response.ProfileResponse;
 import com.alness.findcat.profiles.service.ProfileService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("profiles")
+@Tag(name = "Profiles", description = "Profiles to manage access to endpoints.")
 public class ProfileController {
 
     @Autowired
@@ -37,7 +41,7 @@ public class ProfileController {
     }
 
     @PostMapping()
-    public ResponseEntity<?> save(@RequestBody ProfileRequest request){
+    public ResponseEntity<?> save(@Valid @RequestBody ProfileRequest request){
         ProfileResponse response = profileService.save(request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
