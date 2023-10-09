@@ -7,6 +7,7 @@ import com.alness.findcat.profiles.dto.response.ProfileResponse;
 
 public interface ProfileService {
     public ProfileResponse findOne(String id);
+    public ProfileResponse findOneInt(String id);
     public List<ProfileResponse> find();
     public ProfileResponse save(ProfileRequest request);
     public ProfileResponse update(String id, ProfileRequest request);

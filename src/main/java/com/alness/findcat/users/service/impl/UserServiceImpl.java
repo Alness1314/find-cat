@@ -2,6 +2,7 @@ package com.alness.findcat.users.service.impl;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,6 +10,12 @@ import java.util.UUID;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,19 +26,29 @@ import com.alness.findcat.users.dto.response.UserResponse;
 import com.alness.findcat.users.entity.UserEntity;
 import com.alness.findcat.users.repository.UserRepository;
 import com.alness.findcat.users.service.UserService;
+import com.alness.findcat.utils.Validations;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService, UserDetailsService{
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private ProfileRepository profileRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     ModelMapper mapper = new ModelMapper();
+
+    @PostConstruct
+    public void init(){
+        mapper.getConfiguration().setSkipNullEnabled(true);
+    }
 
     @Override
     public List<UserResponse> find() {
@@ -45,11 +62,20 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public UserResponse findOne(String id) {
-        Optional<UserEntity> user = userRepository.findById(UUID.fromString(id));
-        if(!user.isPresent()){
+        UserResponse user = findOneInternal(id);
+        if(user == null){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("user with id: [%s] not found.", id));
         }
-        return getUser(user.get());
+        return user;
+    }
+
+    @Override
+    public UserResponse findOneInt(String id) {
+        UserResponse user = findOneInternal(id);
+        if(user == null){
+            return null;
+        }
+        return user;
     }
 
     @Override
@@ -67,7 +93,7 @@ public class UserServiceImpl implements UserService{
         List<Profile> profiles = new ArrayList<Profile>();
         profiles.add(profile.get());
         newUser.setProfiles(profiles);
-        //newUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         try {
             newUser.setCreateAt(OffsetDateTime.now());
             newUser.setEnabled(true);
@@ -81,19 +107,45 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public UserResponse update(String id, UserRequest request) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'update'");
     }
 
     @Override
     public void delete(String id) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'delete'");
     }
 
 
     private UserResponse getUser(UserEntity source){
         return mapper.map(source, UserResponse.class);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.info("loading user name: {}", username);
+        Optional<UserEntity> user = userRepository.findByUsername(username);
+        if(!user.isPresent()){
+            log.error(String.format("User with name: [%s] not found in database", username));
+            throw new UsernameNotFoundException(String.format("User with name: [%s] not found in database", username));
+        }
+        Collection<SimpleGrantedAuthority> authorities = new ArrayList<SimpleGrantedAuthority>();
+        user.get().getProfiles().forEach(profile -> {
+            authorities.add(new SimpleGrantedAuthority(profile.getName()));
+        });
+        return new User(user.get().getUsername(), user.get().getPassword(), authorities);
+    }
+
+    private UserResponse findOneInternal(String id){
+        Optional<UserEntity> user = null;
+        if(Validations.isUUID(id)){
+            user = userRepository.findById(UUID.fromString(id));
+        }else{
+            user = userRepository.findByUsername(id);
+        }
+        if(!user.isPresent()){
+            return null;
+        }
+        return getUser(user.get());
     }
     
 }

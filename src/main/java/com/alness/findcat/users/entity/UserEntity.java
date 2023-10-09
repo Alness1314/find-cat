@@ -32,7 +32,7 @@ public class UserEntity extends CommonEntity implements Serializable {
     @Column(nullable = false, unique = true, columnDefinition = "character varying(64)")
     private String username;
 
-    @Column(nullable = false, columnDefinition = "character varying(64)")
+    @Column(nullable = false, columnDefinition = "character varying(255)")
     private String password;
 
     @Column(name = "detail", columnDefinition = "character varying(255)")

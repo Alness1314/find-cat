@@ -17,6 +17,7 @@ import com.alness.findcat.profiles.dto.response.ProfileResponse;
 import com.alness.findcat.profiles.entity.Profile;
 import com.alness.findcat.profiles.repository.ProfileRepository;
 import com.alness.findcat.profiles.service.ProfileService;
+import com.alness.findcat.utils.Validations;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +32,20 @@ public class ProfileServiceImpl implements ProfileService{
 
     @Override
     public ProfileResponse findOne(String id) {
-        return getProfileMapping(internalFindOne(id));
+        Profile profile = internalFindOne(id);
+        if (profile == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Profile with id: [%s] not found", id));
+        }
+        return getProfileMapping(profile);
+    }
+
+    @Override
+    public ProfileResponse findOneInt(String id) {
+        Profile profile = internalFindOne(id);
+        if (profile == null){
+            return null;
+        }
+        return getProfileMapping(profile);
     }
 
     @Override
@@ -75,15 +89,18 @@ public class ProfileServiceImpl implements ProfileService{
 
     @Override
     public void delete(String id) {
-        
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'delete'");
     }
 
     private Profile internalFindOne(String id){
-        Optional<Profile> profile = profileRepo.findById(UUID.fromString(id));
+        Optional<Profile> profile = null;
+        if(Validations.isUUID(id)){
+            profile = profileRepo.findById(UUID.fromString(id));
+        }else{
+            profile = profileRepo.findByName(id);
+        }
         if(!profile.isPresent()){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Profile with id: [%s] not found", id));
+            return null;
         }
         return profile.get();
     }
@@ -91,5 +108,7 @@ public class ProfileServiceImpl implements ProfileService{
     private ProfileResponse getProfileMapping(Profile source){
         return mapper.map(source, ProfileResponse.class);
     }
+
+    
     
 }

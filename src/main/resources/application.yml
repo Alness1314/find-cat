@@ -21,8 +21,8 @@ spring:
     jpa: 
         database-platform: org.hibernate.dialect.PostgreSQLDialect
         show-sql: true
-        hibernate: 
-            ddl-auto: create
+        #hibernate: 
+            #ddl-auto: create
 
 #Open api swagger ui 
 springdoc: 
